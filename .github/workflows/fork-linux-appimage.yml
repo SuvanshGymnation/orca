@@ -1,0 +1,62 @@
+# Fork-only: build the Linux AppImage on a GitHub runner and publish it as a
+# release asset. The VPS never builds — a clean build OOMed at 6 GB there while
+# the agent fleet needs 5.2 GB of the box's 16 GB.
+name: fork-linux-appimage
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v1.4.200-suvansh.1)
+        required: true
+  push:
+    tags: ['v*-suvansh.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Matches upstream release-cut.yml:1164 rather than inventing a target.
+      - name: Build AppImage
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          node config/scripts/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder \
+            --config config/electron-builder.config.cjs \
+            --linux AppImage --x64 --publish never
+
+      # The VPS verifies by architecture, so fail here if it is wrong rather
+      # than shipping an artifact Step 12's `file` check will reject.
+      - name: Verify artifact shape
+        run: |
+          set -euo pipefail
+          APP=$(find dist -maxdepth 1 -name '*.AppImage' -print -quit)
+          [ -n "$APP" ] || { echo "FAIL: no AppImage produced"; exit 1; }
+          LC_ALL=C file "$APP" | grep -q 'ELF .* executable'
+          LC_ALL=C file "$APP" | grep -qF 'x86-64'
+          sha256sum "$APP" | tee "$APP.sha256"
+          echo "built: $APP"
+
+      - name: Publish release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: |
+            dist/*.AppImage
+            dist/*.AppImage.sha256
