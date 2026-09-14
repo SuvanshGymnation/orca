@@ -14,6 +14,11 @@ import {
 } from '../browser-client-host-protocol'
 import { BrowserClientPageMetadataParams } from '../browser-client-page-metadata-protocol'
 import {
+  DropUploadBeginRequestSchema,
+  DropUploadChunkRequestSchema,
+  DropUploadCommitRequestSchema
+} from '../drop-upload-session-contract'
+import {
   PairingGetEndpointsParamsSchema,
   PairingProvisionRelayParamsSchema
 } from '../mobile-relay-credential-contract'
@@ -719,7 +724,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'emulator.tap': TapParams,
   'emulator.type': TypeParams,
   'emulator.unregisterActive': EmulatorUnregisterActiveParams,
+  'files.beginDrop': DropUploadBeginRequestSchema,
   'files.browseServerDir': ServerDirectoryBrowse,
+  'files.commitDrop': DropUploadCommitRequestSchema,
   'files.commitUpload': FileCommitUpload,
   'files.copy': FileCopy,
   'files.createDir': FileMutationOpen,
@@ -744,6 +751,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'files.searchPaths': FilePathSearch,
   'files.stat': FileTreePath,
   'files.unwatch': FileUnwatch,
+  'files.uploadDropChunk': DropUploadChunkRequestSchema,
   'files.watch': WorktreeSelector,
   'files.write': FileWrite,
   'files.writeBase64': FileWriteBase64,
