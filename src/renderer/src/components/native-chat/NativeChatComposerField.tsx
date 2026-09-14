@@ -1,3 +1,4 @@
+import { translate } from '@/i18n/i18n'
 import { NativeChatPromptEditor } from './NativeChatPromptEditor'
 import type { NativeChatComposerInput } from './native-chat-composer-input'
 import type { ClipboardEventHandler, KeyboardEventHandler, RefObject } from 'react'
@@ -33,6 +34,7 @@ export type NativeChatComposerFieldProps = {
   imageAttachments: readonly NativeChatComposerImageAttachment[]
   sendButtonDisabled: boolean
   sendStatus?: NativeChatSendStatus
+  queuedMessages?: readonly string[]
   isWorking: boolean
   attachDisabled: boolean
   dictationDisabled: boolean
@@ -93,6 +95,8 @@ function imeComposedSegment(base: string, settled: string): string {
   return settled.slice(prefix, settled.length - suffix)
 }
 
+const NO_QUEUED_MESSAGES: readonly string[] = []
+
 export function NativeChatComposerField({
   composerScopeKey,
   textareaRef,
@@ -106,6 +110,7 @@ export function NativeChatComposerField({
   imageAttachments,
   sendButtonDisabled,
   sendStatus = 'idle',
+  queuedMessages = NO_QUEUED_MESSAGES,
   isWorking,
   attachDisabled,
   dictationDisabled,
@@ -163,6 +168,30 @@ export function NativeChatComposerField({
     }
     onImeSettled(element)
   }
+
+  const queueBanner =
+    queuedMessages.length > 0 ? (
+      <div
+        data-native-chat-queued-count={queuedMessages.length}
+
+        className="flex flex-col gap-1 px-3 pt-2 text-xs text-muted-foreground"
+      >
+        <span>
+          {translate(
+            'components.native-chat.composer.queuedCount',
+
+            'Queued until the agent finishes - lost if Orca reloads'
+          )}
+          {` (${queuedMessages.length})`}
+        </span>
+
+        {queuedMessages.map((text, index) => (
+          <span key={`${index}-${text}`} data-native-chat-queued-message className="truncate">
+            {text}
+          </span>
+        ))}
+      </div>
+    ) : null
 
   return (
     <div className="shrink-0 bg-background">
@@ -262,6 +291,7 @@ export function NativeChatComposerField({
               )}
             />
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              {queueBanner}
               <NativeChatComposerActions
                 attachDisabled={attachDisabled}
                 dictationDisabled={dictationDisabled}

@@ -17,6 +17,8 @@ import { useNativeChatComposerPaste } from './use-native-chat-composer-paste'
 import { useNativeChatExternalAttachments } from './use-native-chat-external-attachments'
 import { useNativeChatComposerKeyDown } from './use-native-chat-composer-keydown'
 import { useNativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
+import { useNativeChatComposerQueue } from './use-native-chat-composer-queue'
+import { useNativeChatComposerSendDispatch } from './use-native-chat-composer-send-dispatch'
 import { useNativeChatSessionOptions } from './use-native-chat-session-options'
 import { useNativeChatFileAttachmentActions } from './use-native-chat-file-attachment-actions'
 import { useNativeChatDictationActions } from './use-native-chat-dictation-actions'
@@ -277,24 +279,28 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       clearImageAttachments,
       setNotice
     })
-    const send = useCallback(() => {
-      if (hasPendingAttachment) {
-        return
-      }
-      if (!structuredTransport) {
-        sendPty()
-      } else if ((draft.trim() !== '' || imageAttachments.length > 0) && !disabled) {
-        sendStructured(draft, imageAttachments)
-      }
-    }, [
-      disabled,
+    const sendQueue = useNativeChatComposerQueue({
+      isWorking,
+      structuredTransport,
+      sendPty,
+      sendStructured
+    })
+
+    const send = useNativeChatComposerSendDispatch({
       draft,
+      disabled,
       hasPendingAttachment,
       imageAttachments,
+      isWorking,
+      sendQueue,
+      clearDraft: () => {
+        setDraft('')
+        setCaret(0)
+      },
       sendPty,
       sendStructured,
       structuredTransport
-    ])
+    })
 
     const interrupt = useCallback(() => {
       cancelPendingSends()
@@ -367,6 +373,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     return (
       <NativeChatComposerField
         sendStatus={sendStatus}
+        queuedMessages={sendQueue.queued}
         composerScopeKey={paneKey}
         textareaRef={textareaRef}
         draft={draft}
