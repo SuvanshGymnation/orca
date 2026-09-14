@@ -1,6 +1,7 @@
 import { defineMethod, defineStreamingMethod } from '../core'
 import { runFileWatchStream } from './file-watch-stream-lifecycle'
 import { FILE_MUTATION_METHODS } from './files-mutation-methods'
+import { DROP_UPLOAD_METHODS } from './files-drop-upload-methods'
 import { remoteFileContentBudget } from './files-remote-content-budget'
 import { QUICK_OPEN_SEARCH_VERSION } from '../../../../shared/quick-open-path-search'
 import { limitQuickOpenSearchReplyBySerializedBytes } from '../../../../shared/quick-open-transport-budget'
@@ -22,6 +23,7 @@ import {
 let filesWatchSubscriptionSeq = 0
 
 export const FILE_METHODS = [
+  ...DROP_UPLOAD_METHODS,
   defineMethod({
     name: 'files.list',
     params: WorktreeSelector,
