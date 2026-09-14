@@ -1,20 +1,22 @@
 import { useCallback } from 'react'
 import type { NativeChatSendQueue } from './use-native-chat-send-queue'
-
-type ImageAttachment = { path: string; pending?: boolean }
+import type {
+  NativeChatComposerImageAttachment,
+  NativeChatStructuredComposerTransport
+} from './native-chat-composer-types'
 
 /** Chooses between sending now, queueing for later, and refusing outright. */
 export function useNativeChatComposerSendDispatch(args: {
   draft: string
   disabled: boolean
   hasPendingAttachment: boolean
-  imageAttachments: readonly ImageAttachment[]
+  imageAttachments: readonly NativeChatComposerImageAttachment[]
   isWorking: boolean
   sendQueue: NativeChatSendQueue
   clearDraft: () => void
   sendPty: (queuedText?: string) => void
-  sendStructured: (text: string, images: readonly ImageAttachment[]) => void
-  structuredTransport: boolean
+  sendStructured: (text: string, attachments?: readonly NativeChatComposerImageAttachment[]) => void
+  structuredTransport: NativeChatStructuredComposerTransport | undefined
 }): () => void {
   const {
     draft,
