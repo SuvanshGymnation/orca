@@ -5,23 +5,24 @@ import { describe, expect, it } from 'vitest'
 import { useNativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
 import type { NativeChatSendHandle } from './native-chat-runtime-send'
 
-function handle(finished: boolean, settled: Promise<void>): NativeChatSendHandle {
-  return {
-    cancel: () => {},
-    settleAfterMs: 0,
-    settled,
-    bodyStarted: () => true,
-    finished: () => finished
-  } as NativeChatSendHandle
+// No cast: a fixture asserted into the shape the code wants cannot detect that
+// the real shape differs, which is exactly how `finished()` survived review.
+function settlingHandle(settled: Promise<void>): NativeChatSendHandle {
+  return { cancel: () => {}, settleAfterMs: 0, settled }
+}
+
+/** Mirrors sendNativeChatAskAnswer, which reports no completion at all. */
+function silentHandle(): NativeChatSendHandle {
+  return { cancel: () => {}, settleAfterMs: 0 }
 }
 
 describe('native chat send status', () => {
-  it('reports submitted when the send finished', async () => {
+  it('reports pending then submitted for a handle that settles', async () => {
     let resolve = (): void => {}
     const settled = new Promise<void>((r) => (resolve = r))
     const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
 
-    act(() => result.current.trackPendingSend(handle(true, settled)))
+    act(() => result.current.trackPendingSend(settlingHandle(settled)))
     expect(result.current.sendStatus).toBe('pending')
 
     await act(async () => {
@@ -31,29 +32,23 @@ describe('native chat send status', () => {
     expect(result.current.sendStatus).toBe('submitted')
   })
 
-  // The bug: a send that settles without finishing is silently indistinguishable
-  // from one that worked. Without a failed state this assertion cannot be written.
-  it('reports failed when the send settled without finishing', async () => {
-    let resolve = (): void => {}
-    const settled = new Promise<void>((r) => (resolve = r))
+  // A handle with no `settled` cannot report completion, so claiming one would
+  // be the false reassurance this work exists to remove.
+  it('claims nothing for a handle that reports no completion', () => {
     const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
 
-    act(() => result.current.trackPendingSend(handle(false, settled)))
+    act(() => result.current.trackPendingSend(silentHandle()))
 
-    await act(async () => {
-      resolve()
-      await settled
-    })
-    expect(result.current.sendStatus).toBe('failed')
+    expect(result.current.sendStatus).toBe('idle')
   })
 
-  it('reports failed when a tracked send is cancelled before submitting', () => {
-    const settled = new Promise<void>(() => {})
+  it('reports failed when a pending send is cancelled before it settles', () => {
     const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
 
-    act(() => result.current.trackPendingSend(handle(false, settled)))
-    act(() => result.current.cancelPendingSends())
+    act(() => result.current.trackPendingSend(settlingHandle(new Promise<void>(() => {}))))
+    expect(result.current.sendStatus).toBe('pending')
 
+    act(() => result.current.cancelPendingSends())
     expect(result.current.sendStatus).toBe('failed')
   })
 })

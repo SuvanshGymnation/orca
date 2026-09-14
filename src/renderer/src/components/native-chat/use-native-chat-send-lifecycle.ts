@@ -1,8 +1,9 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { NativeChatSendHandle } from './native-chat-runtime-send'
 
-/** `failed` exists because a settled-but-unfinished send is indistinguishable
- *  from one that was never attempted, which is the bug this reports. */
+/** Derived only from what NativeChatSendHandle actually exposes. A handle with
+ *  no `settled` (the ask-answer no-op) reports nothing, so it never enters
+ *  `pending` rather than being given a completion it cannot observe. */
 export type NativeChatSendStatus = 'idle' | 'pending' | 'submitted' | 'failed'
 
 export type NativeChatSendLifecycle = {
@@ -45,18 +46,17 @@ export function useNativeChatSendLifecycle(
       ...(pendingId ? { pendingId } : {})
     }
     pendingSendHandlesRef.current.set(handle, entry)
-    setSendStatus('pending')
     if (handle.settled) {
+      setSendStatus('pending')
       void handle.settled.then(() => {
-        setSendStatus(handle.finished() ? 'submitted' : 'failed')
         if (pendingSendHandlesRef.current.get(handle) === entry) {
+          setSendStatus('submitted')
           pendingSendHandlesRef.current.delete(handle)
         }
       })
       return
     }
     entry.cleanupTimer = setTimeout(() => {
-      setSendStatus(handle.finished() ? 'submitted' : 'failed')
       pendingSendHandlesRef.current.delete(handle)
     }, handle.settleAfterMs)
   }, [])

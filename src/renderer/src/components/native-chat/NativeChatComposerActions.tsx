@@ -14,7 +14,7 @@ export type NativeChatComposerActionsProps = {
   attachDisabled: boolean
   dictationDisabled: boolean
   sendDisabled: boolean
-  sendStatus: NativeChatSendStatus
+  sendStatus?: NativeChatSendStatus
   isWorking: boolean
   isDictating: boolean
   isDictationHoldMode: boolean
@@ -33,7 +33,7 @@ export function NativeChatComposerActions({
   attachDisabled,
   dictationDisabled,
   sendDisabled,
-  sendStatus,
+  sendStatus = 'idle',
   isWorking,
   isDictating,
   isDictationHoldMode,

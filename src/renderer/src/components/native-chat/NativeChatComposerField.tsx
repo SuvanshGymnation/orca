@@ -32,7 +32,7 @@ export type NativeChatComposerFieldProps = {
   notice: string | null
   imageAttachments: readonly NativeChatComposerImageAttachment[]
   sendButtonDisabled: boolean
-  sendStatus: NativeChatSendStatus
+  sendStatus?: NativeChatSendStatus
   isWorking: boolean
   attachDisabled: boolean
   dictationDisabled: boolean
@@ -105,7 +105,7 @@ export function NativeChatComposerField({
   notice,
   imageAttachments,
   sendButtonDisabled,
-  sendStatus,
+  sendStatus = 'idle',
   isWorking,
   attachDisabled,
   dictationDisabled,
