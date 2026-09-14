@@ -1,8 +1,6 @@
 import { useNativeChatSendQueue, type NativeChatSendQueue } from './use-native-chat-send-queue'
-import type {
-  NativeChatComposerImageAttachment,
-  NativeChatStructuredComposerTransport
-} from './native-chat-composer-types'
+import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
+import type { NativeChatStructuredComposerTransport } from './native-chat-composer-types'
 
 /** Routes a queued drain to whichever transport the composer is using. */
 export function useNativeChatComposerQueue(args: {

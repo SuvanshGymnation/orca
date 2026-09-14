@@ -1,9 +1,7 @@
 import { useCallback } from 'react'
 import type { NativeChatSendQueue } from './use-native-chat-send-queue'
-import type {
-  NativeChatComposerImageAttachment,
-  NativeChatStructuredComposerTransport
-} from './native-chat-composer-types'
+import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
+import type { NativeChatStructuredComposerTransport } from './native-chat-composer-types'
 
 /** Chooses between sending now, queueing for later, and refusing outright. */
 export function useNativeChatComposerSendDispatch(args: {
