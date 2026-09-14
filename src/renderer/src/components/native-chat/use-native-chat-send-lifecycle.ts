@@ -1,9 +1,14 @@
-import { useCallback, useLayoutEffect, useRef } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { NativeChatSendHandle } from './native-chat-runtime-send'
+
+/** `failed` exists because a settled-but-unfinished send is indistinguishable
+ *  from one that was never attempted, which is the bug this reports. */
+export type NativeChatSendStatus = 'idle' | 'pending' | 'submitted' | 'failed'
 
 export type NativeChatSendLifecycle = {
   cancelPendingSends: () => void
   trackPendingSend: (handle: NativeChatSendHandle, pendingId?: string) => void
+  sendStatus: NativeChatSendStatus
 }
 
 export function useNativeChatSendLifecycle(
@@ -11,6 +16,7 @@ export function useNativeChatSendLifecycle(
   targetPtyId: string | null,
   onPendingSendCanceled?: (pendingId: string) => void
 ): NativeChatSendLifecycle {
+  const [sendStatus, setSendStatus] = useState<NativeChatSendStatus>('idle')
   const pendingSendHandlesRef = useRef(
     new Map<
       NativeChatSendHandle,
@@ -28,6 +34,9 @@ export function useNativeChatSendLifecycle(
         onPendingSendCanceled?.(pendingId)
       }
     }
+    if (pendingSendHandlesRef.current.size > 0) {
+      setSendStatus('failed')
+    }
     pendingSendHandlesRef.current.clear()
   }, [onPendingSendCanceled])
   const trackPendingSend = useCallback((handle: NativeChatSendHandle, pendingId?: string) => {
@@ -36,8 +45,10 @@ export function useNativeChatSendLifecycle(
       ...(pendingId ? { pendingId } : {})
     }
     pendingSendHandlesRef.current.set(handle, entry)
+    setSendStatus('pending')
     if (handle.settled) {
       void handle.settled.then(() => {
+        setSendStatus(handle.finished() ? 'submitted' : 'failed')
         if (pendingSendHandlesRef.current.get(handle) === entry) {
           pendingSendHandlesRef.current.delete(handle)
         }
@@ -45,6 +56,7 @@ export function useNativeChatSendLifecycle(
       return
     }
     entry.cleanupTimer = setTimeout(() => {
+      setSendStatus(handle.finished() ? 'submitted' : 'failed')
       pendingSendHandlesRef.current.delete(handle)
     }, handle.settleAfterMs)
   }, [])
@@ -53,5 +65,5 @@ export function useNativeChatSendLifecycle(
   // swap or unmount must cancel them before that PTY can close or be reused.
   useLayoutEffect(() => cancelPendingSends, [cancelPendingSends, targetPtyId, terminalTabId])
 
-  return { cancelPendingSends, trackPendingSend }
+  return { cancelPendingSends, trackPendingSend, sendStatus }
 }
