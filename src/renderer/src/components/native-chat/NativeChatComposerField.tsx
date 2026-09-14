@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { NATIVE_FILE_DROP_TARGET } from '../../../../shared/native-file-drop'
 import type { ComposerAutocomplete, NativeChatPickerItem } from './native-chat-composer-state'
 import { NativeChatMentionHint, NativeChatPickerMenu } from './NativeChatAutocompleteMenus'
+import type { NativeChatSendStatus } from './use-native-chat-send-lifecycle'
 import { NativeChatComposerActions } from './NativeChatComposerActions'
 import { nativeChatComposerPlaceholder } from './native-chat-composer-target'
 import type {
@@ -31,6 +32,7 @@ export type NativeChatComposerFieldProps = {
   notice: string | null
   imageAttachments: readonly NativeChatComposerImageAttachment[]
   sendButtonDisabled: boolean
+  sendStatus: NativeChatSendStatus
   isWorking: boolean
   attachDisabled: boolean
   dictationDisabled: boolean
@@ -103,6 +105,7 @@ export function NativeChatComposerField({
   notice,
   imageAttachments,
   sendButtonDisabled,
+  sendStatus,
   isWorking,
   attachDisabled,
   dictationDisabled,
@@ -263,6 +266,7 @@ export function NativeChatComposerField({
                 attachDisabled={attachDisabled}
                 dictationDisabled={dictationDisabled}
                 sendDisabled={sendButtonDisabled}
+                sendStatus={sendStatus}
                 isWorking={isWorking}
                 isDictating={isDictating}
                 isDictationHoldMode={isDictationHoldMode}

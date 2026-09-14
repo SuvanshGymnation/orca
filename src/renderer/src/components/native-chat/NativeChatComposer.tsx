@@ -95,7 +95,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const [dictationPressed, setDictationPressed] = useState(false)
     const imeEnterGesture = useImeEnterGestureOwnership()
     const { textareaRef } = useNativeChatComposerAppMenuSelection(imeEnterGesture.isComposing)
-    const { cancelPendingSends, trackPendingSend } = useNativeChatSendLifecycle(
+    const { cancelPendingSends, trackPendingSend, sendStatus } = useNativeChatSendLifecycle(
       terminalTabId,
       targetPtyId,
       onOptimisticSendCanceled
@@ -366,6 +366,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
 
     return (
       <NativeChatComposerField
+        sendStatus={sendStatus}
         composerScopeKey={paneKey}
         textareaRef={textareaRef}
         draft={draft}

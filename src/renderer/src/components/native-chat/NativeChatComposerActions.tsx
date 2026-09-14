@@ -7,12 +7,14 @@ import type {
   SessionOptionsSurface
 } from '../../../../shared/native-chat-session-options'
 import { NativeChatSessionOptionPickers } from './NativeChatSessionOptionPickers'
+import type { NativeChatSendStatus } from './use-native-chat-send-lifecycle'
 import type { NativeChatOptionPickerRequest } from './native-chat-composer-types'
 
 export type NativeChatComposerActionsProps = {
   attachDisabled: boolean
   dictationDisabled: boolean
   sendDisabled: boolean
+  sendStatus: NativeChatSendStatus
   isWorking: boolean
   isDictating: boolean
   isDictationHoldMode: boolean
@@ -31,6 +33,7 @@ export function NativeChatComposerActions({
   attachDisabled,
   dictationDisabled,
   sendDisabled,
+  sendStatus,
   isWorking,
   isDictating,
   isDictationHoldMode,
@@ -134,6 +137,22 @@ export function NativeChatComposerActions({
             {dictationLabel}
           </TooltipContent>
         </Tooltip>
+        {sendStatus !== 'idle' && (
+          <span
+            data-native-chat-send-status={sendStatus}
+            role="status"
+            aria-live="polite"
+            className={
+              sendStatus === 'failed' ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'
+            }
+          >
+            {sendStatus === 'pending'
+              ? translate('components.native-chat.composer.sendPending', 'Sending…')
+              : sendStatus === 'submitted'
+                ? translate('components.native-chat.composer.sendSubmitted', 'Sent')
+                : translate('components.native-chat.composer.sendFailed', 'Not sent')}
+          </span>
+        )}
         <Button
           type="button"
           data-native-chat-critical-action={isWorking ? 'stop' : undefined}

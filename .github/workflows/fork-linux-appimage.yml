@@ -42,6 +42,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool rpm
 
+      # build:release does not typecheck, so packaging can succeed on code that
+      # does not compile. The VPS cannot run this - tsc OOMs there at 4 GB.
+      - name: Typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: pnpm run typecheck
+
       # The step run 34801248574 was missing. build:release produces out/relay
       # (build:relay) and the packaged CLI (build:cli); without it electron-builder
       # reached afterPack and failed on "file source doesn't exist .../out/relay"
