@@ -35,6 +35,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Required by verify:computer-native inside build:release. Upstream
+      # installs these in the same job (release-cut.yml, linux matrix leg).
+      - name: Install Linux computer-use provider dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool rpm
+
+      # The step run 34801248574 was missing. build:release produces out/relay
+      # (build:relay) and the packaged CLI (build:cli); without it electron-builder
+      # reached afterPack and failed on "file source doesn't exist .../out/relay"
+      # and "Missing unpacked CLI package boundary" in stampPackagedCliVersion.
+      # Upstream runs exactly this before its release_command.
+      - name: Build app
+        run: pnpm build:release
+
       # Matches upstream release-cut.yml:1164 rather than inventing a target.
       - name: Build AppImage
         env:
