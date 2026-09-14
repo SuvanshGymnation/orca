@@ -42,6 +42,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool rpm
 
+      # The repo's own gate is `lint`, which is wider than typecheck: it caught
+      # four localization keys missing from en.json that typecheck could not see.
+      - name: Lint
+        run: pnpm run lint
+
       # build:release does not typecheck, so packaging can succeed on code that
       # does not compile. The VPS cannot run this - tsc OOMs there at 4 GB.
       - name: Typecheck

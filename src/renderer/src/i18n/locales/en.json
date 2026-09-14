@@ -17112,7 +17112,11 @@
         "pendingAttachmentLimit": "Too many attachments are waiting. Finish composing before attaching more.",
         "viewAttachment": "View image",
         "imagePreview": "Full-size image preview",
-        "imagePreviewUnavailable": "Preview unavailable"
+        "imagePreviewUnavailable": "Preview unavailable",
+        "sendPending": "Sending…",
+        "sendSubmitted": "Sent",
+        "sendFailed": "Not sent",
+        "queuedCount": "Queued until the agent finishes - lost if Orca reloads"
       },
       "tool": {
         "exitCode": "exit {{value0}}",
