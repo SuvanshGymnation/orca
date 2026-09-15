@@ -178,7 +178,7 @@ describe('useNativeChatComposerPaste', () => {
     const setNotice = vi.fn()
     const store = createChipStore()
     const probe = await renderProbe({
-      resolveAttachmentOwner: () => ({ kind: 'runtime' }),
+      resolveAttachmentOwner: () => ({ kind: 'runtime', worktreePath: '/w', worktreeId: 'wt' }),
       store,
       setNotice
     })
