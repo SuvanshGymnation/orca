@@ -9,6 +9,8 @@ export type NativeChatSendStatus = 'idle' | 'pending' | 'submitted' | 'failed'
 export type NativeChatSendLifecycle = {
   cancelPendingSends: () => void
   trackPendingSend: (handle: NativeChatSendHandle, pendingId?: string) => void
+  /** For the verified path, where acceptance is a boolean rather than a handle. */
+  trackVerifiedSend: (accepted: Promise<boolean>) => void
   sendStatus: NativeChatSendStatus
 }
 
@@ -61,9 +63,17 @@ export function useNativeChatSendLifecycle(
     }, handle.settleAfterMs)
   }, [])
 
+  const trackVerifiedSend = useCallback((accepted: Promise<boolean>) => {
+    setSendStatus('pending')
+    void accepted.then(
+      (ok) => setSendStatus(ok ? 'submitted' : 'failed'),
+      () => setSendStatus('failed')
+    )
+  }, [])
+
   // Why: delayed Enter/image writes belong to the exact PTY target. A pane
   // swap or unmount must cancel them before that PTY can close or be reused.
   useLayoutEffect(() => cancelPendingSends, [cancelPendingSends, targetPtyId, terminalTabId])
 
-  return { cancelPendingSends, trackPendingSend, sendStatus }
+  return { cancelPendingSends, trackPendingSend, trackVerifiedSend, sendStatus }
 }

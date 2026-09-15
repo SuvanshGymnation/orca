@@ -97,11 +97,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const [dictationPressed, setDictationPressed] = useState(false)
     const imeEnterGesture = useImeEnterGestureOwnership()
     const { textareaRef } = useNativeChatComposerAppMenuSelection(imeEnterGesture.isComposing)
-    const { cancelPendingSends, trackPendingSend, sendStatus } = useNativeChatSendLifecycle(
-      terminalTabId,
-      targetPtyId,
-      onOptimisticSendCanceled
-    )
+    const { cancelPendingSends, trackPendingSend, trackVerifiedSend, sendStatus } =
+      useNativeChatSendLifecycle(terminalTabId, targetPtyId, onOptimisticSendCanceled)
     const dictationState = useAppStore((store) => store.dictationState)
     const voiceSettings = useAppStore((store) => store.settings?.voice)
     const dictationDisabled = voiceSettings?.enabled !== true || !voiceSettings.sttModel
@@ -272,6 +269,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       sessionOptionsSurface: ptySessionOptionsSurface,
       terminalTabId,
       trackPendingSend,
+      trackVerifiedSend,
       setHistory,
       setDraft,
       setCaret,

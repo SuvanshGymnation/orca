@@ -51,4 +51,36 @@ describe('native chat send status', () => {
     act(() => result.current.cancelPendingSends())
     expect(result.current.sendStatus).toBe('failed')
   })
+
+  // The verified path reports acceptance as a boolean, not a handle. Without
+  // it, "submitted" only ever meant we called a function.
+  it('reports submitted when the runtime accepted the bytes', async () => {
+    const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
+
+    await act(async () => {
+      result.current.trackVerifiedSend(Promise.resolve(true))
+    })
+
+    expect(result.current.sendStatus).toBe('submitted')
+  })
+
+  it('reports failed when the runtime did NOT accept the bytes', async () => {
+    const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
+
+    await act(async () => {
+      result.current.trackVerifiedSend(Promise.resolve(false))
+    })
+
+    expect(result.current.sendStatus).toBe('failed')
+  })
+
+  it('reports failed when the verified send throws', async () => {
+    const { result } = renderHook(() => useNativeChatSendLifecycle('tab', 'pty'))
+
+    await act(async () => {
+      result.current.trackVerifiedSend(Promise.reject(new Error('pty gone')))
+    })
+
+    expect(result.current.sendStatus).toBe('failed')
+  })
 })

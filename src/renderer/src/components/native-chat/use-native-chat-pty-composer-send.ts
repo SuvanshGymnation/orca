@@ -5,6 +5,7 @@ import { useAppStore } from '../../store'
 import { emitNativeChatMessageSent } from '@/lib/native-chat-telemetry'
 import {
   sendNativeChatMessage,
+  sendNativeChatMessageVerified,
   sendNativeChatTypedCommand,
   submitNativeChatPrompt
 } from './native-chat-runtime-send'
@@ -35,6 +36,7 @@ export function useNativeChatPtyComposerSend(args: {
   sessionOptionsSurface: NativeChatPtySessionOptionsSurface | null
   terminalTabId: string
   trackPendingSend: NativeChatSendLifecycle['trackPendingSend']
+  trackVerifiedSend: NativeChatSendLifecycle['trackVerifiedSend']
   setHistory: Dispatch<SetStateAction<HistoryState>>
   setDraft: (value: string) => void
   setCaret: Dispatch<SetStateAction<number>>
@@ -85,7 +87,14 @@ export function useNativeChatPtyComposerSend(args: {
           sendOptions
         )
       } else if (text.trim().length > 0) {
-        pendingHandle = sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
+        // On a paired target "sent" must mean the runtime took the bytes, not
+        // that we called a function. The unverified path cannot tell the
+        // difference, which is the false reassurance this closes.
+        if (nativeChatComposerTargetIsRemote(target.ptyId)) {
+          args.trackVerifiedSend(sendNativeChatMessageVerified(target.settings, target.ptyId, text))
+        } else {
+          pendingHandle = sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
+        }
       } else {
         submitNativeChatPrompt(target.settings, target.ptyId)
       }
