@@ -1,7 +1,9 @@
 import { useCallback, useLayoutEffect, useRef } from 'react'
 import { useAppStore } from '@/store'
+import { getActiveRuntimeTarget } from '../../runtime/runtime-client-target'
+import { getSettingsForWorktreeRuntimeOwner } from '../../lib/worktree-runtime-owner'
 import {
-  nativeChatLocalAttachmentUnsupportedNotice,
+  uploadNativeChatRuntimeAttachmentPaths,
   nativeChatWorktreeNotReadyNotice,
   resolveNativeChatAttachmentOwner,
   resolveNativeChatAttachmentOwnerForWorktree,
@@ -58,7 +60,18 @@ export function useNativeChatExternalAttachments({
         return
       }
       if (owner.kind === 'runtime') {
-        setNotice(nativeChatLocalAttachmentUnsupportedNotice())
+        const target = getActiveRuntimeTarget(
+          getSettingsForWorktreeRuntimeOwner(useAppStore.getState(), owner.worktreeId)
+        )
+        void (async () => {
+          const uploaded = await uploadNativeChatRuntimeAttachmentPaths(paths, owner, target)
+          // null means the upload failed. Do not attach and do not send: a
+          // message naming a file that never landed is worse than a refusal.
+          if (!uploaded) {
+            return
+          }
+          attachResolvedPaths(uploaded, null)
+        })()
         return
       }
       if (owner.kind !== 'ssh') {

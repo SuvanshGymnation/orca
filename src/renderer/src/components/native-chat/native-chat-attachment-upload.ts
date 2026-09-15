@@ -4,6 +4,8 @@
 // be uploaded first, exactly like terminal drops (docs/terminal-drop-ssh.md).
 
 import { toast } from 'sonner'
+import { uploadRuntimeDrop } from '../../runtime/runtime-drop-client'
+import type { RuntimeClientTarget } from '../../runtime/runtime-rpc-client'
 import { translate } from '@/i18n/i18n'
 import { extractIpcErrorMessage } from '@/lib/ipc-error'
 import { getConnectionIdFromState } from '@/lib/connection-context'
@@ -30,7 +32,7 @@ export type NativeChatAttachmentOwner =
   | NativeChatSshAttachmentOwner
   /** Runtime-owned (`remote:`) panes keep the composer's existing
    *  local-attachment block; runtime upload support is a separate seam. */
-  | { kind: 'runtime' }
+  | { kind: 'runtime'; worktreePath: string; worktreeId: string }
   /** Store not hydrated / worktree unknown. Callers must not attach local
    *  paths in this window — the worktree may turn out to be remote, and the
    *  agent would silently receive paths it cannot read (see #6648). */
@@ -67,7 +69,12 @@ export function resolveNativeChatAttachmentOwnerForWorktree(
   terminalTabId?: string
 ): NativeChatAttachmentOwner {
   if (getRuntimeEnvironmentIdForWorktree(state, worktreeId)) {
-    return { kind: 'runtime' }
+    const runtimeWorktreePath = terminalTabId
+      ? resolveNativeChatFileLinkContext(state, terminalTabId)?.worktreePath
+      : state.getKnownWorktreeById(worktreeId)?.path
+    return runtimeWorktreePath
+      ? { kind: 'runtime', worktreePath: runtimeWorktreePath, worktreeId }
+      : { kind: 'not-ready' }
   }
   const connectionId = getConnectionIdFromState(state, worktreeId)
   if (connectionId === undefined) {
@@ -132,6 +139,54 @@ export async function uploadNativeChatAttachmentPaths(
     })
     reportTerminalDropUploadSkipsAndFailures(skipped, failed)
     return resolvedPaths
+  } catch (err) {
+    toast.error(extractIpcErrorMessage(err, 'Failed to upload files.'))
+    return null
+  } finally {
+    toast.dismiss(pending)
+  }
+}
+
+/**
+ * Upload client-local paths into `${worktreePath}/.orca/drops` on a PAIRED
+ * runtime and return the paths the agent can read (input order preserved).
+ *
+ * Returns null on any failure. The caller must treat null as "do not send":
+ * a message referencing a file that never landed is worse than a refusal.
+ */
+export async function uploadNativeChatRuntimeAttachmentPaths(
+  paths: string[],
+  owner: { worktreePath: string; worktreeId: string },
+  target: RuntimeClientTarget
+): Promise<string[] | null> {
+  const pending = toast.loading(
+    translate(
+      'components.native-chat.composer.uploadingAttachments',
+      'Uploading {{value0}} file(s) to remote…',
+      { value0: paths.length }
+    )
+  )
+  try {
+    const uploaded: string[] = []
+    for (const sourcePath of paths) {
+      const read = await window.api.fs.readFile({ filePath: sourcePath })
+      const bytes = read.isBinary
+        ? Uint8Array.from(atob(read.content), (char) => char.charCodeAt(0))
+        : new TextEncoder().encode(read.content)
+      // An empty read is far more likely a failed read than an empty file, and
+      // an empty attachment is worthless either way.
+      if (bytes.length === 0) {
+        throw new Error(`Could not read ${sourcePath}`)
+      }
+      uploaded.push(
+        await uploadRuntimeDrop(target, {
+          worktreePath: owner.worktreePath,
+          fileName: sourcePath.split(/[\\/]/).pop() ?? 'attachment',
+          bytes
+        })
+      )
+    }
+    return uploaded
   } catch (err) {
     toast.error(extractIpcErrorMessage(err, 'Failed to upload files.'))
     return null
